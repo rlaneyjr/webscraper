@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 #title:             scrape.py
-#description:       Scrape Any Website
+#description:       Scrape Mostly Mutts - https://www.mostlymutts.org
 #author:            Ricky Laney
 #date:              20181215
 #version:           0.1.0
-#usage:             python scrape.py or ./scrape.py --class="MyClass" --id="MyID"
-#notes:             Provide args to locate the class or id you are searching for.
+#usage:             python scrape.py or ./scrape.py
+#notes:             Grab urls from menu items to recurse. Saves main content text from each page.
 #python_version:    3.6.5
 #==============================================================================
 
@@ -14,20 +14,14 @@ import sys
 import requests
 from bs4 import BeautifulSoup
 
-BASE_URL1 = "https://en.wikipedia.org/wiki/List_of_dog_breeds"
-BASE_URL2 = "https://en.wikipedia.org/wiki/List_of_cat_breeds"
+BASE_URL = "https://www.mostlymutts.org"
 
-base_page = requests.get(BASE_URL1)
-base_soup = BeautifulSoup(base_page.content, 'html.parser')
-table = base_soup.find('tbody')
-table_rows = table.find_all('tr')
-for row in table_rows:
-    name = row.td
 
-def input_base_url(url=None):
+def input_base_url():
+    url = input(f"Please enter your base URL or hit enter for the default \
+                 ({BASE_URL}): ")
     if not url:
-        url = input(f"Please enter your base URL: ")
-        input_base_url(url)
+        return BASE_URL
     elif url.startswith('http://') or url.startswith('https://'):
         return url
     else:
@@ -41,15 +35,17 @@ def make_dirs():
     if 'content' in os.scandir():
         os.rmdir('content')
     os.mkdir('content')
+    if 'all_text' in os.scandir():
+        os.rmdir('all_text')
+    os.mkdir('all_text')
 
 
-def get_table_first_item(url):
+def get_urls(url):
     base_page = requests.get(url)
     base_soup = BeautifulSoup(base_page.content, 'html.parser')
-    table = base_soup.find('table', attrs={'class': 'wikitable sortable jquery-tablesorter'})
-    table_body = table.find('tbody')
-    table_rows = table_body.find_all('tr')
-    for name in table_rows.find_next_sibling('a'):
+    menu = base_soup.find('ul', attrs={'class': 'menu'})
+    urls = []
+    for link in menu.find_all('a'):
         ref = link.get('href')
         if ref.startswith('/') and ref != "/":
             urls.append(ref)
